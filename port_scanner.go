@@ -6,11 +6,24 @@ import (
 	"os"
 	"sync"
 	"time"
+	"honnef.co/go/netdb"
 )
 
 func ErrorMessage() {
 	fmt.Println("Usage: go run ./port-scanner.go <host> <OPTION>")
 	os.Exit(1)
+}
+
+func getServiceName(port int, protocol string) string {
+	proto := netdb.GetProtoByName(protocol)
+	if proto == nil {
+		return "Unknown Protocol"
+	}
+	service := netdb.GetServByPort(port, proto)
+	if service != nil {
+		return service.Name
+	}
+	return "Unknown Service"
 }
 
 func scanPort(host string, port int) bool {
@@ -39,7 +52,8 @@ func scanHost(host string, portStart int, portEnd int) {
 		go func(p int) {
 			defer wg.Done()
 			if scanPort(host, p) {
-				fmt.Printf("Port %d is open\n", p)
+				serviceName := getServiceName(p, "tcp")
+				fmt.Printf("Port %d is open | Service: %s\n", p, serviceName)
 				openNum++
 			}
 			<-guard
